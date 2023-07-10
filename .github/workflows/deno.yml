@@ -1,0 +1,31 @@
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        deno: [1.35.0]
+    name: Test with Deno ${{ matrix.deno }} 
+
+    steps:
+      - uses: actions/checkout@master
+
+
+      - name: Setup Deno
+        uses: denolib/setup-deno@master
+        with:
+          deno-version: ${{ matrix.deno }}
+
+      - name: Print deno version
+        run: deno --version
+
+      - name: Check format
+        run: deno fmt --check **/*.ts
+
+      - name: Run tests
+        run: deno test --allow-net --allow-env test.ts
+        env: # Or as an environment variable
+            TEST_NPSSO: ${{ secrets.TEST_NPSSO }}
+            RUNNING_AS_GITHUB_ACTION: true
