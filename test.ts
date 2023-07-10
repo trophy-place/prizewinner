@@ -1,12 +1,18 @@
+// Test assertion
 import {
   assert,
   assertEquals,
   assertIsError,
   assertNotEquals,
 } from "https://deno.land/std@0.193.0/testing/asserts.ts";
+// Load .env values
 import { load } from "https://deno.land/std@0.193.0/dotenv/mod.ts";
+// Data
+import { expiredRefreshTokenErrorMessage } from "./data/authentication/expiredRefreshTokenErrorMessage.ts";
+// Types
+import type { AuthenticationData } from "./types/authentication/AuthenticationData_type.ts";
+// Internal functions to test
 import { authenticateWithNpsso } from "./src/authentication/authenticateWithNpsso.ts";
-import { AuthenticationData } from "./types/authentication/AuthenticationData_type.ts";
 import { getAccessCode } from "./src/authentication/getAccessCode.ts";
 import { getAuthorizationToken } from "./src/authentication/getAuthorizationToken.ts";
 import { refreshAuthorizationToken } from "./src/authentication/refreshAuthorizationToken.ts";
@@ -188,7 +194,7 @@ Deno.test("Refresh Authentication Token using Refresh Token", async (t) => {
             assertIsError(error);
             assertEquals(
               error.message,
-              'The "refreshToken" is too old to be refreshed. Please login again using a new NPSSO.',
+              expiredRefreshTokenErrorMessage,
             );
           }
         },
