@@ -1,1 +1,1 @@
-export * from "./src/mod.ts";
+export * from "./src/authentication.ts";
