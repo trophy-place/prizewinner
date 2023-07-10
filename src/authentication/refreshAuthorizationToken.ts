@@ -1,5 +1,6 @@
 // Data
 import { authorizationHeaders } from "../../data/authentication/authenticationHeaders.ts";
+import { expiredRefreshTokenErrorMessage } from "../../data/authentication/expiredRefreshTokenErrorMessage.ts";
 import {
   AUTHORIZATION_TOKEN_ENDPOINT,
   BASE_URL,
@@ -16,7 +17,12 @@ import type { AuthenticationData } from "../../types/authentication/Authenticati
  * @param token `AuthenticationData` object provided by a successful authentication with `getAuthorizationToken()` or `authenticateWithNpsso()`.
  * @returns A new `AuthenticationData` object with data required to request further data from other endpoints.
  */
-export async function refreshAuthorizationToken(token: AuthenticationData) {
+export async function refreshAuthorizationToken(
+  token: Pick<
+    AuthenticationData,
+    "refreshToken" | "refreshTokenExpirationEpoch"
+  >,
+) {
   // Throw error if invalid parameter or refreshToken was provided
   if (token === undefined || typeof token.refreshToken !== "string") {
     throw new Error(
@@ -35,9 +41,7 @@ export async function refreshAuthorizationToken(token: AuthenticationData) {
 
   // Throw error if the refreshToken timestamp expired
   if (now > token.refreshTokenExpirationEpoch) {
-    throw new Error(
-      'The "refreshToken" is too old to be refreshed. Please login again using a new NPSSO.',
-    );
+    throw new Error(expiredRefreshTokenErrorMessage);
   }
 
   const authorizationRequestBody = new URLSearchParams({
@@ -69,7 +73,7 @@ export async function refreshAuthorizationToken(token: AuthenticationData) {
   const { access_token, expires_in, refresh_token, refresh_token_expires_in } =
     authenticationResponse;
 
-  const authentication: AuthenticationData = {
+  const authorization: AuthenticationData = {
     accessToken: access_token,
     tokenExpirationEpoch: now + expires_in * 1000,
     humanReadableTokenExpiration: new Date(now + expires_in * 1000)
@@ -81,5 +85,5 @@ export async function refreshAuthorizationToken(token: AuthenticationData) {
     ).toISOString(),
   };
 
-  return authentication;
+  return authorization;
 }

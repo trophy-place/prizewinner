@@ -1,15 +1,21 @@
+// Test assertion
 import {
   assert,
   assertEquals,
   assertIsError,
   assertNotEquals,
 } from "https://deno.land/std@0.193.0/testing/asserts.ts";
+// Load .env values
 import { load } from "https://deno.land/std@0.193.0/dotenv/mod.ts";
+// Data
+import { expiredRefreshTokenErrorMessage } from "./data/authentication/expiredRefreshTokenErrorMessage.ts";
+// Internal functions to test
 import { authenticateWithNpsso } from "./src/authentication/authenticateWithNpsso.ts";
-import { AuthenticationData } from "./types/authentication/AuthenticationData_type.ts";
 import { getAccessCode } from "./src/authentication/getAccessCode.ts";
 import { getAuthorizationToken } from "./src/authentication/getAuthorizationToken.ts";
 import { refreshAuthorizationToken } from "./src/authentication/refreshAuthorizationToken.ts";
+// Authentication Manager Singleton
+import { Auth } from "./services/AuthenticationManager.ts";
 
 let NPSSO: string | undefined;
 if (Deno.env.has("RUNNING_AS_GITHUB_ACTION")) {
@@ -19,7 +25,6 @@ if (NPSSO === undefined) {
   const env = await load();
   NPSSO = env["TEST_NPSSO"];
 }
-let auth: AuthenticationData;
 
 // Tests wether a valid NPSSO is provided and it's possible to authenticate on PSN using it
 Deno.test({ name: "Authenticate using NPSSO" }, async (t) => {
@@ -73,37 +78,38 @@ Deno.test({ name: "Authenticate using NPSSO" }, async (t) => {
     },
   );
 
-  // Test if an authentication attempt returns a valid object with all required properties
+  // Test if an authentication attempt returns a valid `AuthenticationManager` object with all required properties
   await t.step("Authenticate with PSN", async (t) => {
-    const authentication = await authenticateWithNpsso(NPSSO as string);
+    await authenticateWithNpsso(NPSSO as string);
+    const auth = Auth.getFullToken();
+
     await t.step("Authentication has accessToken", () => {
-      assertEquals(typeof authentication.accessToken, "string");
+      assertEquals(typeof auth.accessToken, "string");
     });
     await t.step("Authentication has tokenExpirationEpoch", () => {
-      assertEquals(typeof authentication.tokenExpirationEpoch, "number");
+      assertEquals(typeof auth.tokenExpirationEpoch, "number");
     });
     await t.step("Authentication has humanReadableTokenExpiration", () => {
       assertEquals(
-        typeof authentication.humanReadableTokenExpiration,
+        typeof auth.humanReadableTokenExpiration,
         "string",
       );
     });
     await t.step("Authentication has refreshToken", () => {
-      assertEquals(typeof authentication.refreshToken, "string");
+      assertEquals(typeof auth.refreshToken, "string");
     });
     await t.step("Authentication has tokenExpirationEpoch", () => {
-      assertEquals(typeof authentication.tokenExpirationEpoch, "number");
+      assertEquals(typeof auth.tokenExpirationEpoch, "number");
     });
     await t.step(
       "Authentication has humanReadableRefreshTokenExpiration",
       () => {
         assertEquals(
-          typeof authentication.humanReadableRefreshTokenExpiration,
+          typeof auth.humanReadableRefreshTokenExpiration,
           "string",
         );
       },
     );
-    auth = authentication;
   });
 });
 
@@ -130,6 +136,8 @@ Deno.test("Refresh Authentication Token using Refresh Token", async (t) => {
           }
         },
       );
+
+      const auth = Auth.getFullToken();
 
       // Throws error when token doesn't have a refreshToken field
       await t.step(
@@ -188,7 +196,7 @@ Deno.test("Refresh Authentication Token using Refresh Token", async (t) => {
             assertIsError(error);
             assertEquals(
               error.message,
-              'The "refreshToken" is too old to be refreshed. Please login again using a new NPSSO.',
+              expiredRefreshTokenErrorMessage,
             );
           }
         },
@@ -196,6 +204,7 @@ Deno.test("Refresh Authentication Token using Refresh Token", async (t) => {
     },
   );
 
+  const auth = Auth.getFullToken();
   // Test if the token has the correct refreshToken property type
   await t.step("Test if the refreshToken is a string", () => {
     assertEquals(typeof auth.refreshToken, "string");
