@@ -73,7 +73,7 @@ export async function refreshAuthorizationToken(
   const { access_token, expires_in, refresh_token, refresh_token_expires_in } =
     authenticationResponse;
 
-  const authentication: AuthenticationData = {
+  const authorization: AuthenticationData = {
     accessToken: access_token,
     tokenExpirationEpoch: now + expires_in * 1000,
     humanReadableTokenExpiration: new Date(now + expires_in * 1000)
@@ -85,5 +85,5 @@ export async function refreshAuthorizationToken(
     ).toISOString(),
   };
 
-  return authentication;
+  return authorization;
 }

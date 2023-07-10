@@ -4,6 +4,7 @@ import {
   AUTHORIZATION_TOKEN_ENDPOINT,
   BASE_URL,
 } from "../../data/base/urls.ts";
+import { Auth } from "../../services/AuthenticationManager.ts";
 // Helper functions
 import { nowTimestamp } from "../../services/nowTimestamp.ts";
 // Types
@@ -14,9 +15,13 @@ import { AuthenticationData } from "../../types/authentication/AuthenticationDat
  * Authenticates on PSN using the `accessCode` and returns your access/refresh tokens if successful.
  *
  * @param accessCode String returned by `getAccessCode()` when providing a valid NPSSO as parameter.
+ * @param disableManager If provided as true, returns a `AuthenticationData`, but doesn't initialize the `AuthenticationManager`. If not provided, doesn't return anything, but initializes the `AuthenticationManager`.
  * @returns `AuthenticationData` object with data required to request further data from other endpoints.
  */
-export async function getAuthorizationToken(accessCode: string) {
+export async function getAuthorizationToken(
+  accessCode: string,
+  disableManager?: true,
+) {
   const authorizationRequestBody = new URLSearchParams({
     "code": accessCode,
     "redirect_uri": "com.scee.psxandroid.scecompcall://redirect",
@@ -58,6 +63,12 @@ export async function getAuthorizationToken(accessCode: string) {
       now + refresh_token_expires_in * 1000,
     ).toISOString(),
   };
+
+  // If the `AuthenticationManager` wasn't disabled, initialize it with the token
+  if (disableManager !== true) {
+    Auth.initializeToken(authentication);
+    return;
+  }
 
   return authentication;
 }
